@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model GameSession {
+  id            String   @id @default(cuid())
+  guildId       String
+  createdAt     DateTime @default(now())
+  startedAt     DateTime?
+  endedAt       DateTime?
+  status        String   @default("LOBBY") // LOBBY, RUNNING, ENDED
+  currentVoteId String?
+
+  players Player[]
+  votes   Vote[]
+  roles   RoleAssignment[]
+
+  @@unique([guildId])
+  @@index([status])
+}
+
+model Player {
+  id            String   @id @default(cuid())
+  userId        String
+  gameSessionId String
+  playerNumber  Int?
+  role          String? // Loup-Garou, Voyante, Sorcière, Chasseur, Villageois
+  alive         Boolean  @default(true)
+  nickname      String?
+  joinedAt      DateTime @default(now())
+
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameSessionId])
+  @@index([gameSessionId])
+  @@index([alive])
+}
+
+model Vote {
+  id            String   @id @default(cuid())
+  gameSessionId String
+  voterId       String
+  votedForId    String
+  timestamp     DateTime @default(now())
+  voteRound     Int      @default(1)
+
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+
+  @@index([gameSessionId])
+  @@index([voterId])
+  @@index([voteRound])
+}
+
+model RoleAssignment {
+  id            String   @id @default(cuid())
+  gameSessionId String
+  role          String
+  assignedUserId String
+
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+
+  @@index([gameSessionId])
+}
